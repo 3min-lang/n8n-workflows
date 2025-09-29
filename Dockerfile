@@ -4,7 +4,7 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONIOENCODING=utf-8
 
-# 先裝 Node.js + n8n CLI（importer 需要）
+# 1) 安裝 Node.js 18 + n8n CLI（importer 需要用到 npx n8n）
 RUN apt-get update && apt-get install -y curl gnupg ca-certificates \
  && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
  && apt-get install -y nodejs \
@@ -13,20 +13,15 @@ RUN apt-get update && apt-get install -y curl gnupg ca-certificates \
 
 WORKDIR /app
 
-# 安裝 Python 依賴
+# 2) 安裝 Python 依賴
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 複製專案（包含 workflows/ 資料夾）
+# 3) 複製專案（包含 workflows/）
 COPY . /app
 
-# 方式一（建議）：在「建置時」先把資料匯入到資料庫
-# 這樣部署更快，容器起來就有資料
-RUN python import_workflows.py --force || true \
- && python create_categories.py || true
+# 4) 先做索引（create_categories）以建立 context 檔案
+RUN python create_categories.py || true
 
-# 方式二（備用）：改成在「啟動時」匯入
-# CMD ["sh","-c","python import_workflows.py --force && python create_categories.py || true && python -m uvicorn api_server:app --host 0.0.0.0 --port ${PORT:-${WEB_PORT:-8000}}"]
-
-# 啟動 API（Zeabur 會注入 PORT/WEB_PORT，沒注入時預設 8000 便於本機測試）
-CMD ["sh","-c","python -m uvicorn api_server:app --host 0.0.0.0 --port ${PORT:-${WEB_PORT:-8000}}"]
+# 5) 啟動時做匯入（需要 n8n CLI）；匯入完再開 API
+CMD ["sh","-c","python import_workflows.py --force || true && python -m uvicorn api_server:app --host 0.0.0.0 --port ${PORT:-${WEB_PORT:-8000}}"]
