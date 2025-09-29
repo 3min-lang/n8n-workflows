@@ -114,17 +114,18 @@ class WorkflowImporter:
             return False
 
     def get_workflow_files(self) -> List[Path]:
-        """Get all workflow JSON files."""
-        if not self.workflows_dir.exists():
-            print(f"❌ Workflows directory not found: {self.workflows_dir}")
-            return []
-        
-        json_files = list(self.workflows_dir.glob("*.json"))
-        if not json_files:
-            print(f"❌ No JSON files found in: {self.workflows_dir}")
-            return []
-        
-        return sorted(json_files)
+    """Get all workflow JSON files (recursive)."""
+    if not self.workflows_dir.exists():
+        print(f"❌ Workflows directory not found: {self.workflows_dir}")
+        return []
+
+    # 改成遞迴抓取
+    json_files = list(self.workflows_dir.rglob("*.json"))
+    if not json_files:
+        print(f"❌ No JSON files found in: {self.workflows_dir} (searched recursively)")
+        return []
+
+    return sorted(json_files)
 
     def import_all(self) -> Dict[str, Any]:
         """Import all workflow files."""
