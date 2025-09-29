@@ -59,6 +59,10 @@ class WorkflowImporter:
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
+
+        if "name" not in data or not data["name"]:
+    data["name"] = file_path.stem
+
             # 基本格式檢查
             if not isinstance(data, dict):
                 return False
