@@ -4,24 +4,18 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONIOENCODING=utf-8
 
-# Node.js 20 + n8n CLI（importer 需要）
-RUN apt-get update && apt-get install -y curl gnupg ca-certificates \
- && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
- && apt-get install -y nodejs \
- && npm i -g n8n \
- && apt-get clean && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
-# Python 依賴
+# 先安裝 Python 依賴
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 專案（含 workflows/）
+# 複製專案（包含 workflows/ 與 context/）
 COPY . /app
 
-# 先產生分類檔（就算失敗也不中斷）
-RUN python create_categories.py || true
+# 若沒有分類檔才建立（避免每次重算拖慢部署）
+RUN [ -f context/search_categories.json ] || python create_categories.py
 
-# 啟動時：先匯入，再開 API
-CMD ["sh", "-c", "python import_workflows.py --force && python create_categories.py || true && python -m uvicorn api_server:app --host 0.0.0.0 --port ${PORT}"]
+# 用專案原生的啟動腳本 run.py 開服務（它會負責建索引/資料庫）
+# 一律以 Zeabur 注入的 PORT 監聽；若本機測試沒有 PORT，就用 8000
+CMD ["sh","-c","python run.py --host 0.0.0.0 --port ${PORT:-${WEB_PORT:-8000}}"]
