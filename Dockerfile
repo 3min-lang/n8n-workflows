@@ -24,4 +24,4 @@ COPY . /app
 RUN python create_categories.py || true
 
 # 啟動時：先匯入，再開 API
-CMD ["sh","-c","python import_workflows.py --force || true && python -m uvicorn api_server:app --host 0.0.0.0 --port ${PORT:-${WEB_PORT:-8000}}"]
+CMD ["sh", "-c", "python import_workflows.py --force && python create_categories.py || true && python -m uvicorn api_server:app --host 0.0.0.0 --port ${PORT}"]
