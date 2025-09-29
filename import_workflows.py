@@ -118,13 +118,10 @@ class WorkflowImporter:
     if not self.workflows_dir.exists():
         print(f"❌ Workflows directory not found: {self.workflows_dir}")
         return []
-
-    # 改成遞迴抓取
-    json_files = list(self.workflows_dir.rglob("*.json"))
+    json_files = list(self.workflows_dir.rglob("*.json"))  # ← 改成 rglob
     if not json_files:
         print(f"❌ No JSON files found in: {self.workflows_dir} (searched recursively)")
         return []
-
     return sorted(json_files)
 
     def import_all(self) -> Dict[str, Any]:
